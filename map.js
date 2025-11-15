@@ -102,7 +102,6 @@ map.on('load', async () => {
 
 map.on('load', async () => {
   //previous code
-  let jsonData;
   try {
     const jsonurl = 'https://dsc106.com/labs/lab07/data/bluebikes-stations.json';
     const jsonData = await d3.json(jsonurl);
@@ -122,8 +121,10 @@ map.on('load', async () => {
     .domain([0, d3.max(stations, (d) => d.totalTraffic)])
     .range([0, 25]);
 
+    let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
+
     const svg = d3.select('#map').select('svg');
-    let circles = svg
+    const circles = svg
     .selectAll('circle')
     .data(stations, (d) => d.short_name)
     .enter()
@@ -140,7 +141,8 @@ map.on('load', async () => {
             .text(
                 `${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`,
             );
-    });
+    })
+    .style('--departure-ratio', (d) => stationFlow(d.departures / d.totalTraffic) * 100 + '%');
 
     function updatePositions() {
         circles
@@ -193,7 +195,9 @@ map.on('load', async () => {
         circles
             .data(filteredStations, (d) => d.short_name)
             .join('circle') // Ensure the data is bound correctly
-            .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+            .attr('r', (d) => radiusScale(d.totalTraffic))
+            .style('--departure-ratio', (d) => stationFlow(d.departures / d.totalTraffic),
+        ); // Update circle sizes
     }
 
     timeSlider.addEventListener('input', updateTimeDisplay);
